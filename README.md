@@ -1,10 +1,22 @@
 # MBASIC-Protect
 This is information on the CP/M MBASIC interpreter's protect mode and how to "get around" it.
 
-This is done strickly for educational purposes. There is at least one utility available that does this, but there is no source code or documentation about how they go about it.
+This is done strickly for educational purposes. There is at least one utility already widely available that does this, but there is no source code or documentation about how they go about it.
+
+## UNPRO.COM
+In looking through the Walnut Creek CP/M Repository, I found a couple of things.
+
+The most useful was a file UNPRO.COM that, when ran, would unprotect a BASIC file that has been saved as protected. The program is 1) proof that there is a way to unprotect a protected file and that 2) this capability has been around for a while. (I don't feel that I'm compromising any deep secrets by looking at this around four decades after the interpreter was released. But this means I'm not fundamentally breaking something that hasn't been broken before.) Unfortunately, there is just a simple text file with the command showing it's use and urging people not to unprotect anything they shouldn't. There is no source code and no author is listed. When run with no argument, you see the following:
+
+```
+A>unpro
+UNPRO version 1.0 for MBASIC 5.21
+USAGE:  unpro [d:]filename.ext
+Unprotects and rewrites the file.
+A>
+```
 
 ## Pokes and Peeks
-In looking through the Walnut Creek CP/M Repository, I found a couple of things.
 
 ## Analysis
 I created a program called PATTERN.BAS in a text editor. It has a line number, a REMark statement, one space, and then a series of upper case As. I saved this as a regular tolkenized file and with protection. I had tried to make this so the lines would somewhat line up when looked at as a hex dump. One thing that was immediately obvious was:
