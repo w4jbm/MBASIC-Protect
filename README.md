@@ -17,6 +17,17 @@ A>
 ```
 
 ## Pokes and Peeks
+In the same area of the Walnut Creek Repository, I also found two files with other ideas on how to approach this.
+
+One is a short BASIC program named UNPROTCT.BAS that will poke a machine language program into memory and then CALL it. It claims that once you do this, you can load other protected programs and CALL the routine. I could never make that work. Simplifying things a bit, you can enter a program like this:
+
+```
+10 POKE 2051,49:POKE 3052,0
+```
+If you save this in protected mode and then reload it, you find that you cannot list it. But, if you run it, you can now list the program and save an unprotected copy of it. If you are running an emulator and can tinker with memory locations on the fly, this is likely the easiest way to unprotect a program. (I have not tried this yet, so your mileage may vary with that idea...)
+
+The is a second file named MBASIC-P.DOC that suggests that if you ```POKE 23899,175``` before loading your protected program in MBASIC 5.2, you will be able to list or save the program. I could _not_ make this work in MBASIC 5.21 and I also have not been able to find a copy of MBASIC 5.2 to try it with.
+
 
 ## Analysis
 I created a program called PATTERN.BAS in a text editor. It has a line number, a REMark statement, one space, and then a series of upper case As. I saved this as a regular tolkenized file and with protection. I had tried to make this so the lines would somewhat line up when looked at as a hex dump. One thing that was immediately obvious was:
