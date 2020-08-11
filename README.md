@@ -41,12 +41,12 @@ So ```POKE 23899,175``` effectively replaces ```ORA A``` with ```XRA A```.
 
 Going a step further, he found the same routine in MBASIC 5.21 and disassembled it.
 ```
-5d65 f5 PUSH AF
+5d65 f5       PUSH AF
 5d66 3a ec 0b LD A,(0bec)
-5d69 b7 OR A
+5d69 b7       OR A
 5d6a c2 18 14 JP NZ,1418
-5d6d f1 POP AF
-5d6e c9 RET
+5d6d f1       POP AF
+5d6e c9       RET
 ```
 With things in a slightly different location, under MBASIC 5.21 the command ```POKE 23913,175``` from the comand prompt before loading a protected file will let you list and save the file after loading it.
 
