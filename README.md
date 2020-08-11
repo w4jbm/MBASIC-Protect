@@ -81,5 +81,7 @@ At this point, I have two additional working hypothesis:
   - The first byte of the program is not encrypted. It is simply a flag with a value of FF for an unencrypted program or FE for an encrypted program.
   - Given the speed and the 143 byte repetation rate, it seem likely that the encryption uses something along the lines of ```Encrypted Byte = [(Unencrypted Byte +/- Pre-Counter) XOR Key (for position 1 to 143)] +/- Post-Counter```.
   
-If that second hypothesis is correct, I believe one counter (either the pre-counter or post-counter) runs from 0 to 10 or 1 to 11 while the other counter runs from 0 to 12 or 1 to 13. (There is also a chance that both run from 0 to 11 or 1 to 12 and that either the case of both being 0 or both being 12 gets tossed.) This feels like something that can be "brute forced" somehow.
+If that second hypothesis is correct, I believe one counter (either the pre-counter or post-counter) runs from 0 to 10 or 1 to 11 while the other counter runs from 0 to 12 or 1 to 13. Either counter could count up or count down as well as be added to or subtracted from the byte being encrypted.
+
+This feels like something that can be "brute forced" somehow.
 
