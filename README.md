@@ -39,7 +39,7 @@ PROCHK: PUSH PSW   ;Save flags
 ```
 So ```POKE 23899,175``` effectively replaces ```ORA A``` with ```XRA A```.
 
-Going a step further, he found the same routine in MBASIC 5.21 and disassembled it.
+Going a step further, Martin found the same routine in MBASIC 5.21 and disassembled it.
 ```
 5d65 f5       PUSH AF
 5d66 3a ec 0b LD A,(0bec)
