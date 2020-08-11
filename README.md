@@ -69,3 +69,17 @@ From this you can see:
   - The ecoded pattern in the protect file repeats every 8F (143 decimal) postions. (At least for text that is part of a REMark statement.)
 
 It is interesting that 143 is both 12^2-1 and 11x13. At this point I'm not sure either fact has any significance...
+
+At this point, the fact that MBASIC can act as a tool to build tables that would allow decryption is apparent. If I find locations in the series of 143 that are within a REMark statement, I could write a program that would POKE that location with values from 00 to FF, save a protected copy of the source, open that file, and retrieve the encoded value.
+
+Put another way, I would need 143 indvidual tables, one for each possition in the repeatative sequence. Each table would map the possible values I might find in an encrypted file (from 00 to FF) to it's unencrypted value (also from 00 to FF). This set of tables would require close to 36K of memory, but would be almost trivial to write a program to construct. At that size, it would not be practical to include the table as part of a CP/M command file.
+
+Since I know a much smaller program actually exists and works (the UNPRO.COM program discussed earlier) and since MBASIC itself does not need this type of table to encrype and decrypt a protected file, there must be a simpler equation that would allow you to encrypt "on the fly".
+
+At this point, I have two additional working hypothesis:
+
+  - The first byte of the program is not encrypted. It is simply a flag with a value of FF for an unencrypted program or FE for an encrypted program.
+  - Given the speed and the 143 byte repetation rate, it seem likely that the encryption uses something along the lines of ```Encrypted Byte = [(Unencrypted Byte +/- Some number 0-12) XOR Key (for position 1 to 143)] +/- Some number 0-12```.
+  
+If that second hypothesis is correct, I believe one counter runs from 0 to 10 or 1 to 11 while the other counter runs from 0 to 12 or 1 to 13. (There is also a chance that both run from 0 to 11 or 1 to 12 and that either the case of both being 0 or both being 12 gets tossed.) This feels like something that can be "brute forced" somehow.
+
