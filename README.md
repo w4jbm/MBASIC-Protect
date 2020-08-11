@@ -39,7 +39,7 @@ PROCHK: PUSH PSW   ;Save flags
 ```
 So ```POKE 23899,175``` effectively replaces ```ORA A``` with ```XRA A```.
 
-Going a step further, he found where the same routine in MBASIC 5.21 and disassembled it.
+Going a step further, he found the same routine in MBASIC 5.21 and disassembled it.
 ```
 5d65 f5 PUSH AF
 5d66 3a ec 0b LD A,(0bec)
@@ -60,7 +60,7 @@ I also tried changing just a single character which led me to find:
 
   - Changing any one byte in the program (whether a character or a tolken) changes only one byte in both the tolkenized save and protected save.
 
-When I looked at the protected save and looked for repetition, I found the following...
+To do further checking, I built a file that was nothing but lines with a REMark statement followed by the letter 'A' repeated. The file is in this repository with the ASCII source, the tolkenized format, and the protected format. I also created a hex dump of the protected save and looked for repetition, I found the following...
 
 ![Pattern in protected file...](https://github.com/w4jbm/MBASIC-Protect/raw/master/pattern.png)
 
