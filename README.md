@@ -26,7 +26,29 @@ One is a short BASIC program named UNPROTCT.BAS that will poke a machine languag
 ```
 If you save this in protected mode and then reload it, you find that you cannot list it. But, if you run it, you can now list the program and save an unprotected copy of it. If you are running an emulator and can tinker with memory locations on the fly, this is likely the easiest way to unprotect a program. (I have not tried this yet, so your mileage may vary with that idea...)
 
-The is a second file named MBASIC-P.DOC that suggests that if you ```POKE 23899,175``` before loading your protected program in MBASIC 5.2, you will be able to list or save the program. I could _not_ make this work in MBASIC 5.21 and I also have not been able to find a copy of MBASIC 5.2 to try it with.
+The is a second file named MBASIC-P.DOC that suggests that if you ```POKE 23899,175``` before loading your protected program in MBASIC 5.2, you will be able to list or save the program. I could _not_ make this work in MBASIC 5.21 and was not able to find a copy of MBASIC 5.2 to try it with. Martin in the Google comp.os.cpm had better luck and the rest of this section is from information in his reply.
+
+The source for MBASIC 5.2 is available and if you look at the area impacted by the POKE, you find this in FIVDSK.MAC:
+```
+PROCHK: PUSH PSW   ;Save flags
+        LDA PROFLG ;Is this a protected file?
+        ORA A      ;Set CC's
+        JNZ FCERR  ;Yes, give error
+        POP PSW    ;Restore flags
+        RET
+```
+So ```POKE 23899,175``` effectively replaces ```ORA A``` with ```XRA A```.
+
+Going a step further, he found where the same routine in MBASIC 5.21 and disassembled it.
+```
+5d65 f5 PUSH AF
+5d66 3a ec 0b LD A,(0bec)
+5d69 b7 OR A
+5d6a c2 18 14 JP NZ,1418
+5d6d f1 POP AF
+5d6e c9 RET
+```
+With things in a slightly different location, under MBASIC 5.21 the command ```POKE 23913,175``` from the comand prompt before loading a protected file will let you list and save the file after loading it.
 
 
 ## Analysis
