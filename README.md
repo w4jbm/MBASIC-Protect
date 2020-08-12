@@ -81,7 +81,8 @@ At this point, I have two additional working hypothesis:
   - The first byte of the program is not encrypted. It is simply a flag with a value of FF for an unencrypted program or FE for an encrypted program.
   - Given the speed and the 143 byte repetation rate, it seem likely that the encryption uses something along the lines of ```Encrypted Byte = [(Unencrypted Byte +/- Pre-Counter) XOR Key (for position 1 to 143)] +/- Post-Counter```.
   
-If that second hypothesis is correct, I believe one counter (either the pre-counter or post-counter) runs from 0 to 10 or 1 to 11 while the other counter runs from 0 to 12 or 1 to 13. Either counter could count up or count down as well as be added to or subtracted from the byte being encrypted.
+If that second hypothesis is correct, I believe one counter (either the pre-counter or post-counter) runs from 0 to 10 or 1 to 11 while the other counter runs from 0 to 12 or 1 to 13. Either counter could count up or count down as well as be added to or subtracted from the byte being encrypted. I'm assuming the cycle of 143 bytes happens when the two counters return to being "in synch" every 11x13 or 143 counts.
 
-This feels like something that can be "brute forced" somehow.
+This feels like something that can be "brute forced" somehow. I can generate a file and save both an unprotected copy and a protected copy. Looking at an individual byte, I could subtract (or add) the post-XOR amount from the encrypted value to reverse that part of the operation and also add (or subtract) the pre-XOR amount to the unencrypted value to "anticipate" that part of the operation. That would give me the before and after value of the byte as it goes through the XOR operation. Knowing that, I should be able to determine the value for the "key" for that position.
+
 
