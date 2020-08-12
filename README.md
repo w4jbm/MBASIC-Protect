@@ -62,29 +62,32 @@ I also tried changing just a single character which led me to find:
 
   - Changing any one byte in the program (whether a character or a tolken) changes only one byte in both the tolkenized save and protected save.
 
-To do further checking, I used the file mentioned above. The file is in this repository with the ASCII source, the tolkenized format, and the protected format. I also created a hex dump of the protected save and looked for repetition, I found the following...
+To do further checking, I used the file mentioned above. The file is in this repository with the ASCII source (PATTERN.BAS), the tolkenized format (PATTERN1.BAS), and the protected format (PATTERN2.BAS). I also created a hex dump of the protected save and looked for repetition, I found the following...
 
 ![Pattern in protected file...](https://github.com/w4jbm/MBASIC-Protect/raw/master/pattern.png)
 
 From this you can see:
 
-  - The ecoded pattern in the protect file repeats every 8F (143 decimal) postions. (At least for text that is part of a REMark statement.)
+  - The encoded pattern in the protect file repeats every 8F (143 decimal) postions. (At least for text that is part of a REMark statement.)
 
-It is interesting that 143 is both 12^2-1 and 11x13. At this point I'm not sure either fact has any significance...
+It is interesting that 143 is both 12^2-1 and 11x13. At this point I was not sure either fact had any significance...
 
-At this point, the fact that MBASIC can act as a tool to build tables that would allow decryption is apparent. If I find locations in the series of 143 that are within a REMark statement, I could write a program that would POKE that location with values from 00 to FF, save a protected copy of the source, open that file, and retrieve the encoded value.
+It also became apparent that MBASIC could, with some effort, act as a tool to build tables that would allow decryption. If you find locations in the series of 143 bytes that are within a REMark statement, you could write a program that would POKE that location with values from 00 to FF, save a protected copy of itself to a file, open that file, and retrieve the encoded value.
 
 Put another way, I would need 143 indvidual tables, one for each possition in the repeatative sequence. Each table would map the possible values I might find in an encrypted file (from 00 to FF) to it's unencrypted value (also from 00 to FF). This set of tables would require close to 36K of memory, but would be almost trivial to write a program to construct. At that size, it would not be practical to include the table as part of a CP/M command file.
 
-Since I know a much smaller program actually exists and works (the UNPRO.COM program discussed earlier) and since MBASIC itself does not need this type of table to encrype and decrypt a protected file, there must be a simpler equation that would allow you to encrypt "on the fly".
+Since I knew a much smaller program actually exists and works (the UNPRO.COM program discussed earlier) and since MBASIC itself does not need this type of table to encrype and decrypt a protected file, there must be a simpler equation that would allow you to encrypt things "on the fly".
 
-At this point, I have two additional working hypothesis:
+At this point, I developed two additional working hypothesis:
 
   - The first byte of the program is not encrypted. It is simply a flag with a value of FF for an unencrypted program or FE for an encrypted program.
   - Given the speed and the 143 byte repetation rate, it seem likely that the encryption uses something along the lines of ```Encrypted Byte = [(Unencrypted Byte +/- Pre-Counter) XOR Key (for position 1 to 143)] +/- Post-Counter```.
   
-If that second hypothesis is correct, I believe one counter (either the pre-counter or post-counter) runs from 0 to 10 or 1 to 11 while the other counter runs from 0 to 12 or 1 to 13. Either counter could count up or count down as well as be added to or subtracted from the byte being encrypted. I'm assuming the cycle of 143 bytes happens when the two counters return to being "in synch" every 11x13 or 143 counts.
+If that second hypothesis was correct, I believed one counter (either the pre-counter or post-counter) runs from 0 to 10 or 1 to 11 while the other counter runs from 0 to 12 or 1 to 13. Either counter could count up or count down as well as be added to or subtracted from the byte being encrypted. I was assuming the cycle of 143 bytes happened when the two counters return to being "in synch" every 11x13 or 143 counts.
 
-This feels like something that can be "brute forced" somehow. I can generate a file and save both an unprotected copy and a protected copy. Looking at an individual byte, I could subtract (or add) the post-XOR amount from the encrypted value to reverse that part of the operation and also add (or subtract) the pre-XOR amount to the unencrypted value to "anticipate" that part of the operation. That would give me the before and after value of the byte as it goes through the XOR operation. Knowing that, I should be able to determine the value for the "key" for that position.
+In retrospect, I didn't have a particulary solid reason for believing that both the pre- and post-XOR adders existed. It was a lucky guess. The fact that there was a KEY for positions 1 to 143 turned out to be a workable hypothesis and overall this felt like something that could be "brute forced".
 
+I used my earlier program (with the "As") and also generated a second program with a "message" that I saved in protected format. I loaded the protected copys of the known file and the unknown file into an array (and also created an area for the "decoded" value of the known file.) Then looking at an individual byte, I could subtract (or add) the post-XOR amount from the encrypted value to reverse that part of the operation and also add (or subtract) the pre-XOR amount to the unencrypted value to "anticipate" that part of the operation. That would give me the before and after value of the byte as it goes through the XOR operation. Knowing that, I could determine the value for the "key" for that position.
+
+The order of the counters, whether they counted up (increment) or down (decrement), and what their range of values were (did they start at 0 or 1?)
 
