@@ -159,7 +159,9 @@ Ok
 ```
 The program I was trying to decrypt was just a REMark statement of "The quick brown fox jumped over the lazy brown dog." (I know, the fox is supposed to be red...)
 
-With some tinkering of the pointers, I was able to come up with a list of the 143 individual keys and, at this point, I had enough information to unprotect a program.
+Note: At this point you should be able to create your own file of the form ```10 REM Any comment up to 50 characters...```, save it as a protected (encrypted) file, use a utility like DUMP.COM to snag the contents, place these in the second set of data statements in BRUTEF.BAS, and decode the statement.
+
+It did take some tinkering of the pointers, but I was able to use this as a foundation to deriving a list of the 143 individual keys and, at this point, I had enough information to unprotect a program.
 
 The thing that still bothered me was that it seemed larger than the method UNPRO.COM was probably using (I don't see the 143 position table in the dump of that program). Also, it didn't seem likely that Microsoft had just stuck a random 143 bytes into their code to act as a key.
 
@@ -169,7 +171,7 @@ Another spoiler alert... At this point I decided to look at the MBASIC 5.2 sourc
 
 It turns out that there are actually two different look ups--one for each counter. The PRE add counter points to one of 13 values in SINCON (the sin lookup table) and the POST add counter points to one of 11 values in ATNCON (the atan look up table). So there is the PRE adder, an XOR from the ATNCON table (using POST as the index), an XOR from the SINCON table (using PRE as the index), and finally the POST addition that gives the final result.
 
-Martin came to my aid again by disassembling UNPRO.COM and verifying that it actually used these two seperate tables.
+Martin (from the cpm mailing list) came to my aid again by disassembling UNPRO.COM and verifying that it actually used these two seperate tables.
 
 The source code also revealed that an interesting approach was used in MBASIC. If you SAVE with the ",P" option, the entire contents of the program space are encrypted, then saved to disk, and finaly unencrypted.
 
