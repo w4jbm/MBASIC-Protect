@@ -89,5 +89,92 @@ In retrospect, I didn't have a particulary solid reason for believing that both 
 
 I used my earlier program (with the "As") and also generated a second program with a "message" that I saved in protected format. I loaded the protected copys of the known file and the unknown file into an array (and also created an area for the "decoded" value of the known file.) Then looking at an individual byte, I could subtract (or add) the post-XOR amount from the encrypted value to reverse that part of the operation and also add (or subtract) the pre-XOR amount to the unencrypted value to "anticipate" that part of the operation. That would give me the before and after value of the byte as it goes through the XOR operation. Knowing that, I could determine the value for the "key" for that position.
 
-The order of the counters, whether they counted up (increment) or down (decrement), and what their range of values were (did they start at 0 or 1?)
+The proof-of-concept program I put together is here as BRUTEF.BAS. The data from two protected files are included as DATA statements.
 
+There were several things to tinker with including the order of the counters, whether they counted up (increment) or down (decrement) (or maybe one of each), and what their range of values were. (Did they start at 0 or 1 or something else?)
+
+I tried a couple of combinations before hitting on the right one. Below is the output that shows the squence number (realative to where I started trying to decode a message), the PRE and POST add values (relative to the start of the file), the "known" message value and protected stream of that message, the KEY that was calculated for that position, the protected stream from the message I was trying to decode and finally the decrypted result (both as decimal and as a character):
+
+```
+LOAD "BRUTEF.BAS"
+Ok
+RUN
+Load arrays and initialize data...
+
+SEQ  PR PO   T1  P1  KEY   P2  T2
+  1   7  5   65 166  155  219  84 T
+  2   6  4   65 105   94   64 104 h
+  3   5  3   65 101   94   65 101 e
+  4   4  2   65 110   81   79  32  
+  5   3  1   65 107   84   59 113 q
+  6   2 11   65 210  248  150 117 u
+  7   1 10   65 132   58   92 105 i
+  8  13  9   65  52   31   82  99 c
+  9  12  8   65 209  252  171 107 k
+ 10  11  7   65 152  167  185  32  
+ 11  10  6   65 115   90    8  98 b
+ 12   9  5   65 103   90   56 114 r
+ 13   8  4   65 202  255  156 111 o
+ 14   7  3   65 155  162  213 119 w
+ 15   6  2   65 204  241  155 110 n
+ 16   5  1   65  20   47   53  32  
+ 17   4 11   65 159  169  214 102 f
+ 18   3 10   65 235  223  189 111 o
+ 19   2  9   65  31   41  104 120 x
+ 20   1  8   65 200  128  167  32  
+ 21  13  7   65  88  101   63 106 j
+ 22  12  6   65 226  233  134 117 u
+ 23  11  5   65  28   33   72 109 m
+ 24  10  4   65 127   76   46 112 p
+ 25   9  3   65  94   99   66 101 e
+ 26   8  2   65 107   80   14 100 d
+ 27   7  1   65 234  211  203  32  
+ 28   6 11   65  61    9  107 111 o
+ 29   5 10   65 162  164  223 118 v
+ 30   4  9   65  78  120   34 101 e
+ 31   3  8   65  99  101   18 114 r
+ 32   2  7   65 115   83   84  32  
+ 33   1  6   65 219  149  236 116 t
+ 34  13  5   65 220  227  189 104 h
+ 35  12  4   65 206  255  170 101 e
+ 36  11  3   65  49   24   16  32  
+ 37  10  2   65 214  227  131 108 l
+ 38   9  1   65  43   18   75  97 a
+ 39   8 11   65 156  168  229 122 z
+ 40   7 10   65 108   88   52 121 y
+ 41   6  9   65 236  216  203  32  
+ 42   5  8   65  42   30   75  98 b
+ 43   4  7   65  70    2  115 114 r
+ 44   3  6   65  84  112   34 111 o
+ 45   2  5   65 239  213  165 119 w
+ 46   1  4   65 199  131  242 110 n
+ 47  13  3   65 241  218  204  32  
+ 48  12  2   65 103   80   10 100 d
+ 49  11  1   65  96  105   14 111 o
+ 50  10 11   65  55   27   81 103 g
+ 51   9 10   65 171  153  198  46 .
+
+The quick brown fox jumped over the lazy brown dog.
+Ok
+```
+The program I was trying to decrypt was just a REMark statement of "The quick brown fox jumped over the lazy brown dog." (I know, the fox is supposed to be red...)
+
+With some tinkering of the pointers, I was able to come up with a list of the 143 individual keys and, at this point, I had enough information to unprotect a program.
+
+The thing that still bothered me was that it seemed larger than the method UNPRO.COM was probably using (I don't see the 143 position table in the dump of that program). Also, it didn't seem likely that Microsoft had just stuck a random 143 bytes into their code to act as a key.
+
+My first thought was that this might be code. Feeding it through a disassembler, that didn't seem to be the case. The other problem with that approach would be that it would mean that for the protect function to work on various version, a sizable chunk of code would have had to remained unchanged.
+
+Another spoiler alert... At this point I decided to look at the MBASIC 5.2 source code.
+
+It turns out that there are actually two different look ups--one for each counter. The PRE add counter points to one of 13 values in SINCON (the sin lookup table) and the POST add counter points to one of 11 values in ATNCON (the atan look up table). So there is the PRE adder, an XOR from the ATNCON table (using POST as the index), an XOR from the SINCON table (using PRE as the index), and finally the POST addition that gives the final result.
+
+Martin came to my aid again by disassembling UNPRO.COM and verifying that it actually used these two seperate tables.
+
+The source code also revealed that an interesting approach was used in MBASIC. If you SAVE with the ",P" option, the entire contents of the program space are encrypted, then saved to disk, and finaly unencrypted.
+
+So there is some significant progress. So it should be possible to decryt with an 11 value table (the ATNCON table using the POST value as the pointer) and a 13 value table (the SINCON table using the PRE value as the pointer).
+
+So we've gone from 32K with no intelligence (just a raw lookup based on position of a byte and its value) to 143 bytes with a single lookup table constructed using brute force, and finally to 24 (11+13) bytes of table space knowing that we actually just have a pair of tables creating values for XOR functions.
+
+My goal is to wrap this up by creating UNPRO2.COM (probably using BASIC and the BASCON compiler).
