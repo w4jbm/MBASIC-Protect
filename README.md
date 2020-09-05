@@ -85,7 +85,7 @@ At this point, I developed two additional working hypothesis:
   - The first byte of the program is not encrypted. It is simply a flag with a value of FF for an unencrypted program or FE for an encrypted program.
   - Given the speed and the 143 byte repetation rate, it seem likely that the encryption uses something along the lines of ```Encrypted Byte = [(Unencrypted Byte +/- Pre-Counter) XOR Key (for position 1 to 143)]``` or ```Encrypted Byte = [((Unencrypted Byte) XOR Key (for position 1 to 143)) +/- Post-Counter```.
   
-If that second hypothesis was correct, I believed one counter (either the pre-counter or post-counter) ran from 11 to 1 (or 10 to 0) while the other counter ran from 13 to 1 (or 12 to 0). (Counting down to 1 and then using the zero flage to determine when the counter needed to be reset made the most sense to me.) Either counter could count up or count down as well as be added to or subtracted from the byte being encrypted. I was assuming the cycle of 143 bytes happened when the two counters return to being "in synch" every 11x13 or 143 counts.
+If that second hypothesis was correct, I believed one counter (either the pre-counter or post-counter) ran from 11 to 1 (or 10 to 0) while the other counter ran from 13 to 1 (or 12 to 0). (Counting down to 1 and then using the zero flag to determine when the counter needed to be reset made the most sense to me.) Either counter could count up or count down as well as be added to or subtracted from the byte being encrypted. I was assuming the cycle of 143 bytes happened when the two counters return to being "in synch" every 11x13 or 143 counts.
 
 The fact that there was a KEY for positions 1 to 143 turned out to be a workable hypothesis and overall this felt like something that could be "brute forced".
 
@@ -99,7 +99,7 @@ After these operations, I would have a "key" for that particular position in the
 
 The proof-of-concept program I put together is here as BRUTEF.BAS. The data from two protected files are included as DATA statements.
 
-There were several things to tinker with including the order of the counters; whether they counted up (increment), down (decrement), or maybe one of each; what their range of values were (did they start at 0 or 1 or something else?); and whether they were used a before (pre) or after (post) the XOR operation.
+There were several things to tinker with including the order of the counters; whether they counted up (increment), down (decrement), or maybe one of each; what their range of values were (were they based with 0 or 1 or something else?); and whether they were used a before (pre) or after (post) the XOR operation.
 
 I tried a couple of combinations before hitting on the right one. In the process I found there is both a Pre and Post adder and that the counters did count down to 1 (with hitting zero likely causing the zero flag to reset the value).
 
@@ -171,7 +171,7 @@ The program I was trying to decrypt was just a REMark statement of "The quick br
 
 Note: At this point you should be able to create your own file of the form ```10 REM Any comment up to 50 characters...```, save it as a protected (encrypted) file, use a utility like DUMP.COM to snag the contents, place these in the second set of data statements in BRUTEF.BAS, and decode the statement.
 
-It did take some tinkering of the pointers, but I was able to use this as a foundation to deriving a list of the 143 individual keys and, at this point, I had enough information to unprotect a program.
+It did take some tinkering with the pointers, but I was able to use this as a foundation to deriving a list of the 143 individual keys and, at this point, I had enough information to unprotect a program.
 
 The thing that still bothered me was that it seemed larger than the method UNPRO.COM was probably using (I didn't see the 143 position table in the dump of that program). Also, it didn't seem likely that Microsoft had just stuck a random 143 bytes into their code to act as a key.
 
