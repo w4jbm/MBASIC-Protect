@@ -3,12 +3,14 @@ This is information on the CP/M MBASIC interpreter's protect mode and how to "ge
 
 Let me start with a spoiler alert. The source code for MBASIC 5.2 is available and, while I dug as deep as I could I did eventually consult the source code. This document is roughly in the order I "discovered" things and this is an interesting puzzle to look at.
 
+Ulitmately, I will provide source code (in BASIC designed to be compiled with BASCOM) that will protect or unprotect any tolkenized MBASIC 5.2 program.
+
 And also a disclaimer... This is done strickly for educational purposes. There was at least one utility already widely available that did unprotect files, there was no source code or documentation about how they went about it.
 
 ## UNPRO.COM
 In looking through the Walnut Creek CP/M Repository, I found a couple of things.
 
-The most useful was a file UNPRO.COM that, when ran, would unprotect a BASIC file that has been saved as protected. The program is 1) proof that there is a way to unprotect a protected file and that 2) this capability has been around for a while. (I don't feel that I'm compromising any deep secrets by looking at this around four decades after the interpreter was released. But this means I'm not fundamentally breaking something that hasn't been broken before.) Unfortunately, there is just a simple text file with the command showing its use and urging people not to unprotect anything they shouldn't. There is no source code and no author is listed. When run with no argument, you see the following:
+The most useful was a file UNPRO.COM that, when ran, would unprotect a BASIC file that has been saved as protected. The program was 1) proof that there is a way to unprotect a protected file and 2) that this capability has been around for a while. (I don't feel that I'm compromising any deep secrets by looking at this around four decades after the interpreter was released. But this means I'm not fundamentally breaking something that hasn't been broken before. I also didn't realize that the source code for MBASIC itself was available as I started this.) Unfortunately, there is just a simple text file with the command showing its use and urging people not to unprotect anything they shouldn't. There is no source code and no author is listed. When run with no argument, you see the following:
 
 ```
 A>unpro
@@ -21,7 +23,7 @@ A>
 ## Pokes and Peeks
 In the same area of the Walnut Creek Repository, I also found two files with other ideas on how to approach this.
 
-One was a short BASIC program named UNPROTCT.BAS that POKEs a machine language program into memory and then CALLs it. It claims that once you do this, you can load other protected programs and CALL the routine. While I never could use this method to open any other protected program, it is kind of interesting that it works and probably worth digging into sometime. Simplifying things a bit, you can enter a program like this:
+One was a short BASIC program named UNPROTCT.BAS that POKEs a machine language program into memory and then CALLs it. It claimed that once you do this, you can load other protected programs and CALL the routine. While I never could use this method to open any other protected program, it is kind of interesting that it works and is probably worth digging into sometime. Simplifying things a bit, you can enter a program like this:
 ```
 10 POKE 2051,49:POKE 3052,0
 ```
@@ -52,7 +54,7 @@ Going a step further, Martin found the same routine in MBASIC 5.21 and disassemb
 With things in a slightly different location, under MBASIC 5.21 the command ```POKE 23913,175``` from the comand prompt before loading a protected file will let you list and save the file after loading it.
 
 ## Analysis
-But I was still left wondering how DEPRO.COM worked. I think I found the answer and will share the journey to get there.
+But I was still left wondering how UNPRO.COM worked. With help, I ultimately found the answer and will share the journey that got me there.
 
 I created a program called PATTERN.BAS in a text editor. It was just a line number, a REMark statement, one space, and then a series of upper case As. I saved this both as a regular tolkenized file and also as a tolkenized file with protection. My goal was to make this so the lines would somewhat line up when looked at as a hex dump. One thing that was immediately obvious was:
 
@@ -74,26 +76,34 @@ It is interesting that 143 is both 12^2-1 and 11x13. At this point I was not sur
 
 It also became apparent that MBASIC could, with some effort, act as a tool to build tables that would allow decryption. If you find locations in the series of 143 bytes that are within a REMark statement, you could write a program that would POKE that location with values from 00 to FF, save a protected copy of itself to a file, open that file, and retrieve the encoded value.
 
-Put another way, I would need 143 indvidual tables, one for each possition in the repeatative sequence. Each table would map the possible values I might find in an encrypted file (from 00 to FF) to it's unencrypted value (also from 00 to FF). This set of tables would require close to 36K of memory, but would be almost trivial to write a program to construct. At that size, it would not be practical to include the table as part of a CP/M command file.
+Put another way, I would need 143 indvidual tables, one for each possition in the repeatative sequence. Each table would map the possible values I might find in an encrypted file (from 00 to FF) to it's unencrypted value (also from 00 to FF). This set of tables would require close to 36K of memory, but it would be almost trivial to write a program to construct. At that size, it would not be practical to include the table as part of a CP/M command file.
 
 Since I knew a much smaller program actually exists and works (the UNPRO.COM program discussed earlier) and since MBASIC itself does not need this type of table to encrype and decrypt a protected file, there must be a simpler equation that would allow you to encrypt things "on the fly".
 
 At this point, I developed two additional working hypothesis:
 
   - The first byte of the program is not encrypted. It is simply a flag with a value of FF for an unencrypted program or FE for an encrypted program.
-  - Given the speed and the 143 byte repetation rate, it seem likely that the encryption uses something along the lines of ```Encrypted Byte = [(Unencrypted Byte +/- Pre-Counter) XOR Key (for position 1 to 143)] +/- Post-Counter```.
+  - Given the speed and the 143 byte repetation rate, it seem likely that the encryption uses something along the lines of ```Encrypted Byte = [(Unencrypted Byte +/- Pre-Counter) XOR Key (for position 1 to 143)]``` or ```Encrypted Byte = [((Unencrypted Byte) XOR Key (for position 1 to 143)) +/- Post-Counter```.
   
-If that second hypothesis was correct, I believed one counter (either the pre-counter or post-counter) runs from 0 to 10 or 1 to 11 while the other counter runs from 0 to 12 or 1 to 13. Either counter could count up or count down as well as be added to or subtracted from the byte being encrypted. I was assuming the cycle of 143 bytes happened when the two counters return to being "in synch" every 11x13 or 143 counts.
+If that second hypothesis was correct, I believed one counter (either the pre-counter or post-counter) ran from 11 to 1 (or 10 to 0) while the other counter ran from 13 to 1 (or 12 to 0). (Counting down to 1 and then using the zero flage to determine when the counter needed to be reset made the most sense to me.) Either counter could count up or count down as well as be added to or subtracted from the byte being encrypted. I was assuming the cycle of 143 bytes happened when the two counters return to being "in synch" every 11x13 or 143 counts.
 
-In retrospect, I didn't have a particulary solid reason for believing that both the pre- and post-XOR adders existed. It was a lucky guess. The fact that there was a KEY for positions 1 to 143 turned out to be a workable hypothesis and overall this felt like something that could be "brute forced".
+The fact that there was a KEY for positions 1 to 143 turned out to be a workable hypothesis and overall this felt like something that could be "brute forced".
 
-I used my earlier program (with the "As") and also generated a second program with a "message" that I saved in protected format. I loaded the protected copys of the known file and the unknown file into an array (and also created an area for the "decoded" value of the known file.) Then looking at an individual byte, I could subtract (or add) the post-XOR amount from the encrypted value to reverse that part of the operation and also add (or subtract) the pre-XOR amount to the unencrypted value to "anticipate" that part of the operation. That would give me the before and after value of the byte as it goes through the XOR operation. Knowing that, I could determine the value for the "key" for that position.
+I used my earlier program (with the "As") and also generated a second program with a "message" that I saved in protected format. I loaded the protected copys of the known file and the unknown file into an array (and also created an area for the "decoded" value of the known file.) Then looking at an individual byte, I could do three things:
+
+  - Subtract or add or do nothing with a "post-XOR" value from one of the two counters
+  - XOR the value against the known value (in this case, the ASCII value of the character "A")
+  - Subtract or add or do nohting with a "pre-XOR" value from one of the two counters
+
+After these operations, I would have a "key" for that particular position in the 143 byte cycle and then I could apply that key (along with the pre and/or post operations) to the "test message" in my second BASIC program.
 
 The proof-of-concept program I put together is here as BRUTEF.BAS. The data from two protected files are included as DATA statements.
 
-There were several things to tinker with including the order of the counters, whether they counted up (increment) or down (decrement) (or maybe one of each), and what their range of values were. (Did they start at 0 or 1 or something else?)
+There were several things to tinker with including the order of the counters; whether they counted up (increment), down (decrement), or maybe one of each; what their range of values were (did they start at 0 or 1 or something else?); and whether they were used a before (pre) or after (post) the XOR operation.
 
-I tried a couple of combinations before hitting on the right one. Below is the output that shows the squence number (realative to where I started trying to decode a message), the PRE and POST add values (relative to the start of the file), the "known" message value and protected stream of that message, the KEY that was calculated for that position, the protected stream from the message I was trying to decode and finally the decrypted result (both as decimal and as a character):
+I tried a couple of combinations before hitting on the right one. In the process I found there is both a Pre and Post adder and that the counters did count down to 1 (with hitting zero likely causing the zero flag to reset the value).
+
+Below is the output that shows the squence number (realative to where I started trying to decode a message), the PRE and POST add values (relative to the start of the file), the "known" message value and protected stream of that message, the KEY that was calculated for that position, the protected stream from the message I was trying to decode and finally the decrypted result (both as decimal and as a character):
 
 ```
 LOAD "BRUTEF.BAS"
@@ -163,20 +173,52 @@ Note: At this point you should be able to create your own file of the form ```10
 
 It did take some tinkering of the pointers, but I was able to use this as a foundation to deriving a list of the 143 individual keys and, at this point, I had enough information to unprotect a program.
 
-The thing that still bothered me was that it seemed larger than the method UNPRO.COM was probably using (I don't see the 143 position table in the dump of that program). Also, it didn't seem likely that Microsoft had just stuck a random 143 bytes into their code to act as a key.
+The thing that still bothered me was that it seemed larger than the method UNPRO.COM was probably using (I didn't see the 143 position table in the dump of that program). Also, it didn't seem likely that Microsoft had just stuck a random 143 bytes into their code to act as a key.
 
-My first thought was that this might be code. Feeding it through a disassembler, that didn't seem to be the case. The other problem with that approach would be that it would mean that for the protect function to work on various version, a sizable chunk of code would have had to remained unchanged.
+My first thought was that this might be machine code from within MBASIC somewhere. Feeding it through a disassembler, that didn't seem to be the case. The other problem with that approach would be that it would mean that for the protect function to work on various version, a sizable chunk of code would have had to remained unchanged in MBASIC from version to version. (Remember earlier we couldn't even get a POKE that worked in V5.2 to work in V5.21--clear the code tended to shift around at least in spots.)
 
-Another spoiler alert... At this point I decided to look at the MBASIC 5.2 source code.
+So the big spoiler alert... At this point I decided to look at the MBASIC 5.2 source code.
 
 It turns out that there are actually two different look ups--one for each counter. The PRE add counter points to one of 13 values in SINCON (the sin lookup table) and the POST add counter points to one of 11 values in ATNCON (the atan look up table). So there is the PRE adder, an XOR from the ATNCON table (using POST as the index), an XOR from the SINCON table (using PRE as the index), and finally the POST addition that gives the final result.
 
 Martin (from the cpm mailing list) came to my aid again by disassembling UNPRO.COM and verifying that it actually used these two seperate tables.
 
-The source code also revealed that an interesting approach was used in MBASIC. If you SAVE with the ",P" option, the entire contents of the program space are encrypted, then saved to disk, and finaly unencrypted.
+The source code also revealed that an interesting approach was used in MBASIC. If you SAVE with the ",P" option, the entire contents of the program space are encrypted in place, then saved to disk, and finaly unencrypted.
 
-So there is some significant progress. So it should be possible to decryt with an 11 value table (the ATNCON table using the POST value as the pointer) and a 13 value table (the SINCON table using the PRE value as the pointer).
+Knowing all of this this, it is possible to decryt with an 11 value table (the ATNCON table using the POST value as the pointer) and a 13 value table (the SINCON table using the PRE value as the pointer).
 
-So we've gone from 32K with no intelligence (just a raw lookup based on position of a byte and its value) to 143 bytes with a single lookup table constructed using brute force, and finally to 24 (11+13) bytes of table space knowing that we actually just have a pair of tables creating values for XOR functions.
+So we've gone from 36K with no intelligence (just a raw lookup based on position of a byte and its value) to 143 bytes with a single lookup table constructed using brute force, and finally to 24 (11+13) bytes of table space knowing that we actually just have a pair of tables creating values for XOR functions.
 
-My goal is to wrap this up by creating UNPRO2.COM (probably using BASIC and the BASCON compiler).
+I planned to write a program testing all of this, but was sidetracked for a few weeks. During that time I came across a copy of an article entitled "A Chosen-Plaintext Attack on the Microsoft BASIC Protection" by Rene van den Assem and Willem-Jan van Elk from 1986. (I'm not sure of the actual publication the article originally appeared in.)
+
+They do a much better job of figuring out what is going on using some rigour at least to the point of being able to come up with an elegant way of creating the 143 byte key table for decryption. What they do is pure decription and they don't disassemble the source code or do anything else of that nature. (And, realistically, if you were simply interested in unprotecting something it probably isn't worth the extra effort of trying to understand where the keys come from.)
+
+But having successfully "brute forced" the 143 keys, I was curious if you might be able to "brute force" identifying the location of the SINCON and ATNCON tables without any previous knowledge of where they were or that they were being used.
+
+The answer is "yes". Taking the tables created by van den Assem and van Elk's approach, you can find the table by looking for three consecutive locations in two different locations that XOR to the first three values in their larger table. How to find these tables is shown in FNDTBLE.BAS. This program takes a very, very long time to crank through every pair of locations, do an XOR and then decide if it is worth doing a second, a third, and eventually a fourth XORs.
+
+The results look like this:
+
+```
+RUN
+ 14612         14691 
+ 14691         14612 
+Ok
+```
+Testing any fewer than four positions of the table yields some spurious results. Also, I have no doubt that if van den Assem and van Elk had seen the results, they would have immediately recognized the significance and been able to refine their program.
+
+I used my previous UNIX2CPM.BAS program as the basis for handlign the filename on the command line and then van dem Assem and van Elk's KRAK.BAS program (modified to use the two tables that are known instead of having to create a 143 key table using yet another program) for the actual code to protect or unprotect a file. (I had started to code something up before this but had issues that their opening files for 1 byte records resolved.) The result is UNPRO2.BAS with is compiled into UNPRO2.COM. This command will protect or unprotect an MBASIC tolkenized file.
+
+## And the fine print...
+
+These programs are intended for personal use only. Any material will be removed at the request of the copyright holder or those holding other rights to it.
+
+To the extent applicable, any original work herein is:
+
+Copyright 2020 by James McClanahan and made available under the terms of The MIT License.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
