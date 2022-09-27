@@ -2,3 +2,4 @@
 *.com linguist-detectable=false
 *.png linguist-detectable=false
 *.pdf linguist-detectable=false
+*.dat linguist-detectable=false
